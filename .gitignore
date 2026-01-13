@@ -1,0 +1,10 @@
+
+Custom/data
+fitting/data/Custom/data
+avatar/common/utils/human_model_files/
+fitting/common/utils/human_model_files/
+avatar/data/Custom/data/
+output/
+__pycache__
+avatar/main/neutral_pose/
+!avatar/data/Custom/data/gyeongsik/video.mp4

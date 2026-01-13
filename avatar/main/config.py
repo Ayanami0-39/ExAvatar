@@ -37,7 +37,7 @@ class Config:
     lpips_weight = 0.2
 
     ## dataset
-    dataset = 'NeuMan' # Custom, NeuMan
+    dataset = 'Custom' # 'NeuMan', 'Custom', 'XHumans'
 
     ## others
     num_thread = 8
