@@ -7,10 +7,14 @@ from pytorch3d.io import load_obj
 
 class SMPLX(object):
     def __init__(self):
-        self.shape_param_dim = 100
-        self.expr_param_dim = 50
+        self.shape_param_dim = 100  # smplx shape param dim
+        self.expr_param_dim = 50    # flame expr param dim
         self.layer_arg = {'create_global_orient': False, 'create_body_pose': False, 'create_left_hand_pose': False, 'create_right_hand_pose': False, 'create_jaw_pose': False, 'create_leye_pose': False, 'create_reye_pose': False, 'create_betas': False, 'create_expression': False, 'create_transl': False}
-        self.layer = smplx.create(cfg.human_model_path, 'smplx', gender='male', num_betas=self.shape_param_dim, num_expression_coeffs=self.expr_param_dim, use_pca=False, use_face_contour=True, **self.layer_arg)
+        self.layer = smplx.create(
+            cfg.human_model_path, 'smplx', gender='male', num_betas=self.shape_param_dim, 
+            num_expression_coeffs=self.expr_param_dim, use_pca=False, 
+            use_face_contour=True, **self.layer_arg
+        )
         self.face_vertex_idx = np.load(osp.join(cfg.human_model_path, 'smplx', 'SMPL-X__FLAME_vertex_ids.npy'))
         self.layer = self.get_expr_from_flame(self.layer) 
         self.vertex_num = 10475
@@ -70,17 +74,40 @@ class SMPLX(object):
 
     
     def get_expr_from_flame(self, smplx_layer):
-        flame_layer = smplx.create(cfg.human_model_path, 'flame', gender='neutral', num_betas=self.shape_param_dim, num_expression_coeffs=self.expr_param_dim)
+        '''
+        Replace SMPL-X expression basis with FLAME expression basis.
+        Args:
+            smplx_layer: SMPL-X layer
+        Returns:
+            smplx_layer: SMPL-X layer with FLAME expression basis
+        '''
+        flame_layer = smplx.create(
+            cfg.human_model_path, 'flame', gender='neutral', 
+            num_betas=self.shape_param_dim, 
+            num_expression_coeffs=self.expr_param_dim
+        )
         smplx_layer.expr_dirs[self.face_vertex_idx,:,:] = flame_layer.expr_dirs
         return smplx_layer
     
     def get_face_offset(self, face_offset):
+        '''
+        Pad face offset to full vertex offset.
+        Args:
+            face_offset: (B, Fv, 3) float32 tensor
+        Returns:
+            face_offset_pad: (B, V, 3) float32 tensor
+        '''
         batch_size = face_offset.shape[0]
         face_offset_pad = torch.zeros((batch_size,self.vertex_num,3)).float().cuda()
         face_offset_pad[:,self.face_vertex_idx,:] = face_offset
         return face_offset_pad
     
     def get_joint_offset(self, joint_offset):
+        '''
+        Pad joint offset to full joint offset except root and hip joints.
+        Returns:
+            joint_offset: (1, , 3) float32 tensor
+        '''
         weight = torch.ones((1,self.joint['num'],1)).float().cuda()
         weight[:,self.joint['root_idx'],:] = 0
         weight[:,self.joint['name'].index('R_Hip'),:] = 0
@@ -89,6 +116,11 @@ class SMPLX(object):
         return joint_offset
     
     def get_locator_offset(self, locator_offset):
+        '''
+        Pad locator offset to full joint offset (only allow offset on hip locators).
+        Returns:
+            locator_offset: (1, , 3) float32 tensor
+        '''
         weight = torch.zeros((1,self.joint['num'],1)).float().cuda()
         weight[:,self.joint['name'].index('R_Hip'),:] = 1
         weight[:,self.joint['name'].index('L_Hip'),:] = 1
@@ -96,6 +128,12 @@ class SMPLX(object):
         return locator_offset
 
     def load_uv_info(self):
+        '''
+        Load SMPL-X UV map info.
+        Returns:
+            vertex_uv: (V`, 2) float32 array, the UV coordinates for each vertex.
+            face_uv: (F, 3) int64 array
+        '''
         verts, faces, aux = load_obj(osp.join(cfg.human_model_path, 'smplx', 'smplx_uv', 'smplx_uv.obj'))
         vertex_uv = aux.verts_uvs.numpy().astype(np.float32) # (V`, 2)
         face_uv = faces.textures_idx.numpy().astype(np.int64) # (F, 3). 0-based

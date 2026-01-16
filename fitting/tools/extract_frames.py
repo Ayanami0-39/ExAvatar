@@ -1,3 +1,10 @@
+'''
+Extract frames from video.mp4 and save them as PNG images in a 'frames' directory.
+Params:
+    root_path: Path to the directory containing video.mp4
+Results:
+    frames saved in <root_path>/frames/
+'''
 import os
 import os.path as osp
 from glob import glob

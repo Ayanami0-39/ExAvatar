@@ -8,3 +8,4 @@ output/
 __pycache__
 avatar/main/neutral_pose/
 !avatar/data/Custom/data/gyeongsik/video.mp4
+fitting/tools/COLMAP/

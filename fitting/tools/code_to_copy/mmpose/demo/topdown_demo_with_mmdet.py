@@ -1,4 +1,9 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning, module='mmengine')
+
 import logging
 import mimetypes
 import os
@@ -193,7 +198,7 @@ def main():
     from tqdm import tqdm
     import os.path as osp
     img_path_list = glob(osp.join(args.input, '*.jpg')) + glob(osp.join(args.input, '*.png'))
-    for img_path in img_path_list:
+    for img_path in tqdm(img_path_list, desc="Processing images"):
         # inference
         pred_instances = process_one_image(args, img_path, detector,
                                            pose_estimator, visualizer)
@@ -216,7 +221,7 @@ def main():
                         instance_info=pred_instances_list),
                     f,
                     indent='\t')
-            print(f'predictions have been saved at {args.pred_save_path}')
+    print(f'predictions have been saved at {args.output_root}/results_xxx.json')
 
 
 if __name__ == '__main__':
